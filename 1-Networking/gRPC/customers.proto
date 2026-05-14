@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+service CustomerService {
+    rpc GetAll (Empty) return (CustomerList) {}
+    rpc Get (CustomerRequestId) return (Customer) {}
+    rpc Insert (Customer) return (Customer) {}
+    rpc Update (Customer) return (Customer) {}
+    rpc Remove (CustomerRequestId) return (Empty) {}
+}
+
+message Empty {}
+
+message CustomerRequestId {
+    string id = 1;
+}
+
+message CustomerList {
+    // customer is a custom datatype
+    // repeated is used to represent arrays
+    repeated Customer customers = 1;
+}
+
+message Customer {
+    string id = 1;
+    string name = 2;
+    int32 age = 3;
+}
