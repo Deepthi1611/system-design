@@ -22,6 +22,7 @@ const customers = [
     { id: 3, name: 'Bob Johnson', age: 40 }
 ];
 
+// console.log(server, 'server')
 
 // add the service to the server and implement the methods defined in the protobuf
 server.addService(customerProto.CustomerService.service, { 
@@ -33,15 +34,52 @@ server.addService(customerProto.CustomerService.service, {
         callback(null, { customers });
     },
     Get : (call, callback) => {
+        let id = parseInt(call.request.id);
         
+        let customer = customers.find(c => c.id === id);
+        if (customer) {
+            callback(null, customer);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: `Customer with id ${id} not found`
+            });
+        }
     },
     Insert: (call, callback) => {
-
+        let newCustomer = call.request;
+        newCustomer.id = customers.length + 1;
+        customers.push(newCustomer);
+        callback(null, newCustomer);
     },
     Update: (call, callback) => {
-
+        let updatedCustomer = call.request;
+        let id = parseInt(updatedCustomer.id);
+        let index = customers.findIndex(c => c.id === id);
+        if (index !== -1) {
+            updatedCustomer.id = id;
+            customers[index] = updatedCustomer;
+            console.log('Updated customer:', updatedCustomer);
+            callback(null, updatedCustomer);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: `Customer with id ${updatedCustomer.id} not found`
+            });
+        }
     },
     Remove: (call, callback) => {
+        let id = parseInt(call.request.id);
+        let index = customers.findIndex(c => c.id === id);
+        if (index !== -1) {
+            customers.splice(index, 1);
+            callback(null, { success: true });
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: `Customer with id ${id} not found`
+            });
+        }
     }
 });
 
@@ -49,6 +87,12 @@ server.addService(customerProto.CustomerService.service, {
 // servercredentials.createInsecure() is used to create insecure credentials for the server,
 // which means that the communication between the client and server will not be encrypted. 
 // In a production environment, you should use secure credentials instead.
-server.bind('localhost:50051', grpc.ServerCredentials.createInsecure());
-console.log('Server running at http://localhost:50051');
-server.start();
+server.bindAsync('localhost:50051', grpc.ServerCredentials.createInsecure(), (err, port) => {
+    if (err) { 
+        console.error('Server binding error:', err);
+    }
+  else {
+    server.start();
+    console.log('Server running at http://localhost:50051');
+  }
+});
