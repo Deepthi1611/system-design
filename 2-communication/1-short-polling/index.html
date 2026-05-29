@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Short Polling Demo</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #17202a;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(560px, calc(100% - 32px));
+      background: #ffffff;
+      border: 1px solid #d7dee7;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(23, 32, 42, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 24px;
+    }
+
+    .data-box {
+      min-height: 88px;
+      padding: 16px;
+      border: 1px solid #d7dee7;
+      border-radius: 6px;
+      background: #fbfcfd;
+      line-height: 1.5;
+    }
+
+    .meta {
+      margin-top: 12px;
+      color: #5d6d7e;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #1f7a8c;
+      color: #ffffff;
+    }
+
+    button.secondary {
+      background: #34495e;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Short Polling Demo</h1>
+    <div id="data" class="data-box">Loading data...</div>
+    <div id="lastFetched" class="meta">Waiting for first fetch.</div>
+
+    <div class="actions">
+      <button id="fetchNow">Fetch Now</button>
+      <button id="updateData" class="secondary">Update Server Data</button>
+    </div>
+  </main>
+
+  <script>
+    const dataElement = document.getElementById('data');
+    const lastFetchedElement = document.getElementById('lastFetched');
+    const fetchNowButton = document.getElementById('fetchNow');
+    const updateDataButton = document.getElementById('updateData');
+    const pollingInterval = 5000;
+
+    async function fetchData() {
+      try {
+        const response = await fetch('/data');
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        dataElement.textContent = data.message;
+        lastFetchedElement.textContent = `Last fetched at ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        dataElement.textContent = 'Unable to fetch data from the server.';
+        lastFetchedElement.textContent = error.message;
+      }
+    }
+
+    async function updateServerData() {
+      try {
+        const response = await fetch('/update-data');
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        lastFetchedElement.textContent = result.message;
+      } catch (error) {
+        dataElement.textContent = 'Unable to update server data.';
+        lastFetchedElement.textContent = error.message;
+      }
+    }
+
+    fetchNowButton.addEventListener('click', fetchData);
+    updateDataButton.addEventListener('click', updateServerData);
+
+    fetchData();
+    setInterval(fetchData, pollingInterval);
+  </script>
+</body>
+</html>
