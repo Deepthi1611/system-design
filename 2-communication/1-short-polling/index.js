@@ -13,16 +13,31 @@ app.get('/', (req, res) => {
 
 let data = { message: 'Hello, this is the Initial data you requested!' };
 
+// This array will hold the response objects of clients that are waiting for data updates
+const waitingclients = [];
+
 // Endpoint to get the data
+// here comparison is done to check if the data has changed since the last request, 
+// if it has changed then it will send the new data,
+//  otherwise it will not send anything (or you can choose to send a specific response indicating no change)
+// in real implementation, there might be an id that need to be compared, here we are comparing data directly for simplicity
 app.get('/data', (req, res) => {
-    console.log('Received request for data');
-    res.json(data);
+    if(data !== req.query.lastData) {
+        res.json(data);
+    } else {
+        // if data has not changed, we will keep the client waiting until there is an update
+        waitingclients.push(res);
+    }
 });
 
 // Endpoint to update the data
 // use put for updates, using get so that we can easily test with browser
 app.get('/update-data', (req, res) => {
     data = { message: 'Data has been updated at ' + new Date().toISOString() };
-    console.log('Data updated', data);
-    res.json({ message: 'Data updated successfully' });
+    // Notify all waiting clients about the data update
+    while (waitingclients.length > 0) {
+        const clientRes = waitingclients.pop();
+        clientRes.json(data);
+    }
+    res.send('Data updated and clients notified');
 });
