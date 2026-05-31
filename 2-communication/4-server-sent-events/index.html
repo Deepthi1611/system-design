@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server-Sent Events Demo</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #17202a;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(560px, calc(100% - 32px));
+      background: #ffffff;
+      border: 1px solid #d7dee7;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(23, 32, 42, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 24px;
+    }
+
+    .data-box {
+      min-height: 88px;
+      padding: 16px;
+      border: 1px solid #d7dee7;
+      border-radius: 6px;
+      background: #fbfcfd;
+      line-height: 1.5;
+    }
+
+    .meta {
+      margin-top: 12px;
+      color: #5d6d7e;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #1f7a8c;
+      color: #ffffff;
+    }
+
+    button.secondary {
+      background: #34495e;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Server-Sent Events Demo</h1>
+    <div id="data" class="data-box">Loading data...</div>
+    <div id="status" class="meta">Waiting for first fetch.</div>
+  </main>
+
+  <script>
+    const dataElement = document.getElementById('data');
+    const statusElement = document.getElementById('status');
+
+    // EventSource opens a long-lived HTTP connection to the SSE endpoint.
+    // The server can keep writing events to this same connection.
+    const events = new EventSource('/sse');
+
+    // The onopen event is triggered when the connection to the server is established.
+    events.onopen = () => {
+      statusElement.textContent = 'Connected to event stream.';
+    };
+
+    // The onmessage event is triggered whenever the server sends a new event.
+    events.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      dataElement.textContent = data.message;
+      statusElement.textContent = `Last event received at ${new Date().toLocaleTimeString()}`;
+    };
+
+    // The onerror event is triggered if there's an error with the connection (e.g., server goes down).
+    events.onerror = () => {
+      dataElement.textContent = 'Unable to receive data from the server.';
+      statusElement.textContent = 'Event stream connection failed.';
+    };
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('node:http');
-const path = require('path');
+const path = require('node:path');
 // importing the Server class from the socket.io package
 const { Server } = require('socket.io');
 
@@ -9,6 +9,7 @@ const app = express();
 // creates the HTTP server internally. Here we create it ourselves so
 // Socket.IO can attach to the same server as the Express app.
 const server = http.createServer(app);
+// Creating a new instance of the Socket.IO server and attaching it to the HTTP server
 const io = new Server(server);
 const PORT = 3000;
 
@@ -18,11 +19,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Listening for new client connections to the Socket.IO server
 io.on('connection', (socket) => {
   console.log('Client connected');
 
+  // When a new client connects, we send them the current chat history
   socket.emit('chat:history', messages);
 
+  // Listening for 'chat:message' events from the client. 
+  // When a message is received, we process it and broadcast it to all connected clients
   socket.on('chat:message', (rawMessage) => {
     const text = String(rawMessage).trim();
 
@@ -42,6 +47,7 @@ io.on('connection', (socket) => {
       messages.shift();
     }
 
+    // Broadcasting the new chat message to all connected clients using io.emit()
     io.emit('chat:message', chatMessage);
   });
 
