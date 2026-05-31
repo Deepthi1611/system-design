@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chat Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #17202a;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(640px, calc(100% - 32px));
+      height: min(720px, calc(100vh - 32px));
+      background: #ffffff;
+      border: 1px solid #d7dee7;
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(23, 32, 42, 0.08);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #d7dee7;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .status {
+      margin-top: 8px;
+      color: #5d6d7e;
+      font-size: 14px;
+    }
+
+    .messages {
+      min-height: 0;
+      padding: 16px 24px;
+      overflow-y: auto;
+      background: #fbfcfd;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty-state {
+      margin: auto;
+      color: #5d6d7e;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .message {
+      max-width: 78%;
+      padding: 10px 12px;
+      border: 1px solid #d7dee7;
+      border-radius: 8px;
+      background: #ffffff;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .message.own {
+      align-self: flex-end;
+      border-color: #1f7a8c;
+      background: #e8f5f7;
+    }
+
+    .message-time {
+      display: block;
+      margin-top: 6px;
+      color: #5d6d7e;
+      font-size: 12px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 16px 24px 20px;
+      border-top: 1px solid #d7dee7;
+      background: #ffffff;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #b8c4d2;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 15px;
+      color: #17202a;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(31, 122, 140, 0.25);
+      border-color: #1f7a8c;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #1f7a8c;
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      background: #8aa6ad;
+    }
+
+    @media (max-width: 520px) {
+      main {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
+
+      form {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>WebSocket Chat Demo</h1>
+      <div id="status" class="status">Connecting...</div>
+    </header>
+
+    <section id="messages" class="messages" aria-live="polite">
+      <div id="emptyState" class="empty-state">No messages yet. Start the conversation below.</div>
+    </section>
+
+    <form id="messageForm">
+      <input id="messageInput" type="text" placeholder="Type a message" autocomplete="off">
+      <button id="sendButton" type="submit" disabled>Send</button>
+    </form>
+  </main>
+
+  <!-- Socket.IO serves this client library automatically from the Node server. -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const statusElement = document.getElementById('status');
+    const messagesElement = document.getElementById('messages');
+    const emptyStateElement = document.getElementById('emptyState');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+
+    // io() opens a real-time Socket.IO connection to the same host
+    // that served this HTML page.
+    // io() is equivalent to window.io() because
+    // Socket.IO attaches the client library to the global window object.
+    const socket = io();
+
+    // Used only to mark messages sent from this browser differently
+    // after the server broadcasts them back.
+    const pendingMessages = new Set();
+
+    function formatTime(value) {
+      return new Date(value).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function addMessage(message) {
+      emptyStateElement.hidden = true;
+
+      const messageElement = document.createElement('div');
+      messageElement.className = 'message';
+
+      // The server broadcasts every message to everyone, including
+      // the sender. If this text was just sent by this browser, style it
+      // as the current user's message when it comes back.
+      if (pendingMessages.has(message.text)) {
+        messageElement.classList.add('own');
+        pendingMessages.delete(message.text);
+      }
+
+      const textElement = document.createElement('span');
+      textElement.textContent = message.text;
+
+      const timeElement = document.createElement('time');
+      timeElement.className = 'message-time';
+      timeElement.dateTime = message.sentAt;
+      timeElement.textContent = formatTime(message.sentAt);
+
+      messageElement.append(textElement, timeElement);
+      messagesElement.append(messageElement);
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+    }
+
+    // Fired when the browser successfully connects to the Socket.IO server.
+    socket.on('connect', () => {
+      statusElement.textContent = 'Connected';
+      sendButton.disabled = false;
+      messageInput.focus();
+    });
+
+    // The server sends existing messages once when a new browser connects.
+    socket.on('chat:history', (messages) => {
+      messages.forEach(addMessage);
+    });
+
+    // Fired whenever the server broadcasts a new chat message.
+    socket.on('chat:message', (message) => {
+      addMessage(message);
+    });
+
+    // Fired when the real-time connection is closed.
+    socket.on('disconnect', () => {
+      statusElement.textContent = 'Disconnected';
+      sendButton.disabled = true;
+    });
+
+    // Fired if Socket.IO cannot connect to the server.
+    socket.on('connect_error', () => {
+      statusElement.textContent = 'Connection error';
+      sendButton.disabled = true;
+    });
+
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const text = messageInput.value.trim();
+
+      if (!text || !socket.connected) {
+        return;
+      }
+
+      pendingMessages.add(text);
+
+      // Send the message to the server. The server will broadcast it
+      // back through the chat:message event.
+      socket.emit('chat:message', text);
+      messageInput.value = '';
+      messageInput.focus();
+    });
+  </script>
+</body>
+</html>
