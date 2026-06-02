@@ -1,0 +1,16 @@
+{
+  "name": "mitigation",
+  "version": "1.0.0",
+  "description": "Cross-site scripting, or XSS, happens when untrusted input is treated as executable HTML or JavaScript inside a page.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14"
+  }
+}
