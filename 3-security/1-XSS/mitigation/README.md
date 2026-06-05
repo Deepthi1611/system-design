@@ -400,6 +400,112 @@ p.textContent = userInput;
 container.appendChild(p);
 ```
 
+## Avoid eval
+
+Avoid using `eval()` with user input or external data.
+
+Dangerous:
+
+```js
+const action = new URLSearchParams(window.location.search).get('action');
+eval(action);
+```
+
+If the URL is:
+
+```txt
+page.html?action=alert(document.cookie)
+```
+
+then `eval()` runs that string as JavaScript.
+
+That is dangerous because it turns data into code.
+
+Also avoid similar code execution APIs:
+
+```js
+new Function(userInput);
+setTimeout(userInput);
+setInterval(userInput);
+```
+
+When `setTimeout` or `setInterval` receive a string, the browser evaluates that string as code.
+
+Dangerous:
+
+```js
+setTimeout("alert(document.cookie)", 1000);
+```
+
+Safer:
+
+```js
+setTimeout(() => {
+  console.log('Run normal function code');
+}, 1000);
+```
+
+### Alternative: use a function map
+
+Instead of evaluating a string as code, map allowed names to known functions.
+
+Dangerous:
+
+```js
+eval(action);
+```
+
+Safer:
+
+```js
+const actions = {
+  save: () => saveDraft(),
+  preview: () => showPreview(),
+  publish: () => publishPost(),
+};
+
+if (actions[action]) {
+  actions[action]();
+}
+```
+
+Only predefined actions can run.
+
+### Alternative: parse JSON instead of evaluating it
+
+Dangerous:
+
+```js
+const data = eval(`(${jsonString})`);
+```
+
+Safer:
+
+```js
+const data = JSON.parse(jsonString);
+```
+
+`JSON.parse()` parses data. It does not execute arbitrary JavaScript.
+
+### Alternative: use normal expressions or libraries
+
+If you are using `eval()` to calculate expressions, use a dedicated parser or a small allowlisted implementation instead of executing arbitrary JavaScript.
+
+For example, prefer:
+
+```js
+const allowedOperators = {
+  add: (a, b) => a + b,
+  subtract: (a, b) => a - b,
+};
+```
+
+over:
+
+```js
+eval(`${a} ${operator} ${b}`);
+```
+
 ## URL safety
 
 Do not blindly put user input into URLs.
