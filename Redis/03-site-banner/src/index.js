@@ -1,5 +1,5 @@
 const express = require('express');
-const redis = require('ioredis');
+const Redis = require('ioredis');
 
 // create express app
 const app = express();
@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json());
 
 // create redis client
-const client = new redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 // these keys can also be stored in another file which contain all constants
 const BANNER_KEY = 'app-banner';
