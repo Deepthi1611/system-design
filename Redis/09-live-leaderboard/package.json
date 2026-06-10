@@ -1,15 +1,14 @@
 {
-  "name": "08-live-notification-pub-sub",
+  "name": "09-live-leaderboard",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "api": "nodemon src/api.js",
-    "subscriber": "nodemon src/subscriber.js"
+    "start": "nodemon src/index.js"
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Live leaderboard using Redis with INCR, ZINCRBY, ZREVRANGE, and ZREVRANK",
   "dependencies": {
     "express": "^5.2.1",
     "ioredis": "^5.11.1",
