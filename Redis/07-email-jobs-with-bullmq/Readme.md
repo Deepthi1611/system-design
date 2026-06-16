@@ -437,10 +437,11 @@ Notes:
 
 Using `scheduler.js`
 
-- `src/scheduler.js` is a helper that calls `emailQueue.add(..., { repeat: { cron }})` to create repeatable jobs. The helper itself only adds the repeat metadata — you must ensure a scheduler process is running and that the repeat metadata is created from a trusted place (startup or admin API).
+- `src/scheduler.js` is a helper that creates repeatable jobs on BullMQ with a deterministic job ID. This prevents duplicate repeatable entries if the server restarts and the schedule initialization code runs again.
+- The helper checks existing repeatable jobs first, and only adds the schedule if it does not already exist.
 - Two common integration patterns:
   1. Start schedules at app startup (good for fixed schedules): import and call `scheduleEmailCron()` during initialization of your API/worker process.
- 2. Expose admin endpoints that call `scheduleEmailCron()` / `removeRepeatable()` so operators can add/remove schedules at runtime.
+  2. Expose admin endpoints that call `scheduleEmailCron()` / `removeRepeatable()` so operators can add/remove schedules at runtime.
 
 Example: ensure a QueueScheduler is running (required for reliable repeatable/delayed processing)
 
