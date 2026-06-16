@@ -1,6 +1,6 @@
 // consumer
 import { Worker } from 'bullmq';
-import { connection } from './queue.js';
+import { connection, dlqQueue } from './queue.js';
 
 // Worker processes jobs from the emailQueue
 // It takes three parameters: the name of the queue, 
@@ -24,6 +24,35 @@ emailWorker.on('completed', (job) => {
     console.log(`Job ${job.id} completed successfully.`);
 });
 
-emailWorker.on('failed', (job, err) => {
+emailWorker.on('failed', async (job, err) => {
     console.error(`Job ${job.id} failed with error: ${err.message}`);
+
+    // If the job had a configured number of attempts and all attempts
+    // have been exhausted, move a record of the job into the DLQ for
+    // inspection or manual replay.
+    try {
+        const maxAttempts = job.opts && job.opts.attempts ? job.opts.attempts : 0;
+        if (maxAttempts > 0 && job.attemptsMade >= maxAttempts) {
+                // include replay metadata to avoid infinite replay loops
+                const dlqPayload = {
+                    originalJobId: job.id,
+                    originalName: job.name,
+                    originalData: job.data,
+                    failedReason: err && err.message ? err.message : String(err),
+                    attemptsMade: job.attemptsMade,
+                    failedAt: Date.now(),
+                    // how many times this DLQ entry has been replayed
+                    replayCount: 0,
+                    // maximum automatic/manual replays allowed for this entry
+                    maxReplays: (job.opts && job.opts.maxReplays) ? job.opts.maxReplays : 3,
+                    // whether this item is considered poisoned (should not be replayed automatically)
+                    poisoned: false,
+                };
+
+                await dlqQueue.add('failedJob', dlqPayload);
+                console.log(`Moved job ${job.id} to DLQ as failedJob (maxReplays=${dlqPayload.maxReplays})`);
+        }
+    } catch (e) {
+        console.error('Error moving job to DLQ:', e);
+    }
 });
