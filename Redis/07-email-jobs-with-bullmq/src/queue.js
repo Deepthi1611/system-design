@@ -9,3 +9,7 @@ export const connection = {
 // we can declare multiple queues for different purposes, 
 // here we are declaring a queue for sending emails
 export const emailQueue = new Queue('emailQueue', { connection });
+
+// Dead Letter Queue (DLQ) for permanently failed jobs
+// Use a separate queue name that does not contain ':' (bullmq restriction)
+export const dlqQueue = new Queue('emailQueue-dlq', { connection });
