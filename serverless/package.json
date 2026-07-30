@@ -1,0 +1,23 @@
+{
+  "name": "serverless-basic-app",
+  "version": "1.0.0",
+  "description": "A small Serverless Framework app with two Node.js Lambda functions.",
+  "main": "handler.js",
+  "scripts": {
+    "start": "serverless offline",
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f hello -t"
+  },
+  "keywords": [
+    "serverless",
+    "aws-lambda",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^4.4.20",
+    "serverless-offline": "^14.4.0"
+  }
+}

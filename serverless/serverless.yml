@@ -1,0 +1,32 @@
+service: basic-serverless-app
+
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: dev
+  region: us-east-1
+  memorySize: 128
+  timeout: 10
+  architecture: arm64
+  environment:
+    APP_NAME: basic-serverless-app
+
+plugins:
+  - serverless-offline
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /hello
+          method: get
+
+  time:
+    handler: handler.time
+    events:
+      - httpApi:
+          path: /time
+          method: get
